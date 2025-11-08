@@ -1,0 +1,1153 @@
+{
+  "name": "Mental Wellness Assessment & Expert Matching",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "user-response",
+              "name": "userResponse",
+              "value": "={{ $json.body.userResponse || $json.body.answer || $json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "question-stage",
+              "name": "questionStage",
+              "value": "={{ $json.body.questionStage || 'initial' }}",
+              "type": "string"
+            },
+            {
+              "id": "user-city",
+              "name": "userCity",
+              "value": "={{ $json.body.userCity || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "session-id",
+              "name": "sessionId",
+              "value": "={{ $json.body.sessionId || $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "assessment-data",
+              "name": "assessmentData",
+              "value": "={{ $json.body.assessmentData || '{}' }}",
+              "type": "string"
+            },
+            {
+              "id": "wants-expert",
+              "name": "wantsExpert",
+              "value": "={{ $json.body.wantsExpert || 'unknown' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -784,
+        112
+      ],
+      "id": "86d78d91-7805-49f6-8207-df0d9287a992",
+      "name": "Extract Intake Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-initial",
+              "leftValue": "={{ $json.questionStage }}",
+              "rightValue": "complete",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -560,
+        112
+      ],
+      "id": "430385ba-ab75-4d8c-949c-68991efeaec5",
+      "name": "Check Assessment Stage"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "wants-expert-check",
+              "leftValue": "={{ $('Extract Intake Data').item.json.wantsExpert }}",
+              "rightValue": "yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -240,
+        96
+      ],
+      "id": "1afaa50b-fbe6-4c19-af7d-163f57c997a3",
+      "name": "Check If Expert Needed"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appmnJofkYqI6sH4V",
+          "mode": "list",
+          "cachedResultName": "Expert Matching & Assessment",
+          "cachedResultUrl": "https://airtable.com/appmnJofkYqI6sH4V"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblSOQYEQSwXLCl1Q",
+          "mode": "list",
+          "cachedResultName": "Experts_Lisbon",
+          "cachedResultUrl": "https://airtable.com/appmnJofkYqI6sH4V/tblSOQYEQSwXLCl1Q"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        16
+      ],
+      "id": "f452751a-e918-4ceb-aa17-63f3d7a36b77",
+      "name": "Get Experts by City",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "uMDuzZSAHkILfv9l",
+          "name": "Airtable Personal Access Token account"
+        }
+      },
+      "notes": "Retrieves mental health experts from the user's city"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- Inputs ----\n// Intake comes from: Extract Intake Data\n// Experts arrive as multiple input items from \"Get Experts by City\"\n\n// 1) Get concerns from the intake node and normalize them\nconst intake = $('Extract Intake Data').item.json;\nconst userCity = (intake.userCity || '').toLowerCase();\n\n// assessmentData arrives as a JSON string -> parse to array\nlet concernsRaw = [];\ntry {\n  concernsRaw = JSON.parse(intake.assessmentData || '[]');\n} catch (e) {\n  concernsRaw = [];\n}\n\n// Map assessment flags to search keywords\nconst concernMap = {\n  depressed_mood: ['depression', 'mood'],\n  sleep_difficulties: ['insomnia', 'sleep'],\n  high_anxiety_stress: ['anxiety', 'stress'],\n  low_energy_motivation: ['fatigue', 'burnout', 'depression']\n};\nconst concernKeywords = new Set(\n  concernsRaw.flatMap(c => (concernMap[c] || [])).map(s => s.toLowerCase())\n);\n\n// 2) Pull experts from node input\nconst experts = $input.all()\n  // keep only records that actually look like experts\n  .map(i => i.json)\n  .filter(e => e && e.Name && e.Specialties);\n\n// Bail out if nothing usable\nif (experts.length === 0) {\n  return [{\n    json: {\n      matchedExpert: null,\n      concernsMatched: concernsRaw,\n      message: \"We don't have an expert profile ready for your city yet, but I can still guide you.\"\n    }\n  }];\n}\n\n// 3) Score experts\nconst scored = experts.map(e => {\n  const specs = String(e.Specialties || '').toLowerCase();\n\n  // match score from concerns\n  let score = 0;\n  for (const kw of concernKeywords) {\n    if (specs.includes(kw)) score += 10;\n  }\n\n  // availability weighting\n  const avail = String(e.Availability || '').toLowerCase();\n  if (avail === 'available') score += 5;\n  if (avail === 'waitlist') score -= 5;\n\n  // city bonus (exact match)\n  const city = String(e.City || '').toLowerCase();\n  if (userCity && city === userCity) score += 3;\n\n  // lower workload is better\n  const wl = Number(e['Current Workload Score'] ?? 999);\n  return { ...e, _score: score, _wl: wl };\n});\n\n// 4) Pick best by score, then by workload\nscored.sort((a, b) => (b._score - a._score) || (a._wl - b._wl));\nconst best = scored[0];\n\nif (!best) {\n  return [{\n    json: {\n      matchedExpert: null,\n      concernsMatched: concernsRaw,\n      message: \"We couldn't find any experts matching your criteria.\"\n    }\n  }];\n}\n\n// 5) Build safe return (Airtable has Email/Phone, not \"Contact\")\nreturn [{\n  json: {\n    matchedExpert: {\n      name: best.Name,\n      specialties: best.Specialties,\n      email: best.Email || null,\n      phone: best.Phone || null,\n      bio: best.Bio || null,\n      availability: best.Availability || null,\n      city: best.City || null,\n      languages: best.Languages || [],\n      sessionType: best['Session Type'] || []\n    },\n    concernsMatched: concernsRaw,\n    message: `I found ${best.Name}, who specializes in ${best.Specialties}. Would you like their contact information?`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        16
+      ],
+      "id": "e4106969-f8cd-4fae-8b05-336b3be21077",
+      "name": "Match Expert to Concerns"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "User city: {{ $('Extract Intake Data').item.json.userCity }}\nConcerns: {{ $('Parse Assessment Response').item.json.concernsIdentified.join(', ') }}\nMatched Expert: {{ $('Match Expert to Concerns').item.json.matchedExpert?.name || 'None available' }}",
+        "options": {
+          "systemMessage": "You are providing the final response after a mental wellness assessment.\n\nCreate a warm, supportive message that:\n1. Acknowledges their courage in completing the assessment\n2. Briefly summarizes the main areas discussed (without labeling or diagnosing)\n3. Introduces the matched expert by name and specialty\n4. Provides the expert's contact information\n5. Ends with encouragement\n\nKeep it conversational and under 5 sentences. Be hopeful and supportive.\n\nIMPORTANT: If no expert was matched, provide supportive resources and coping strategies instead."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        16
+      ],
+      "id": "8bc30342-4453-491c-948e-c7097d002d73",
+      "name": "Generate Expert Introduction"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.8
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1712,
+        224
+      ],
+      "id": "0e4e344e-dfa0-43a6-9679-9719fae973a9",
+      "name": "OpenAI - Expert Intro Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "qVlqPgrprRstvHqt",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Concerns identified: {{ $('Parse Assessment Response').item.json.concernsIdentified.join(', ') }}\nEmotional tone: {{ $('Parse Assessment Response').item.json.emotionalTone }}",
+        "options": {
+          "systemMessage": "You are providing supportive guidance to someone who declined professional help.\n\nCreate a warm, non-judgmental response that:\n1. Respects their decision\n2. Provides 2-3 practical, evidence-based coping strategies\n3. Normalizes their experiences\n4. Mentions they can always reach out for professional help later\n5. Ends with encouragement\n\nFocus on actionable self-care techniques. Keep it under 6 sentences and conversational.\n\nSuggestions might include:\n- Sleep hygiene practices\n- Breathing exercises\n- Mindfulness techniques\n- Physical activity\n- Social connection\n- Journaling\n- Routine building"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        336,
+        288
+      ],
+      "id": "9f99b2c2-41f6-4c22-84b6-12b12a8020b3",
+      "name": "Generate Supportive Guidance"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.8
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        336,
+        416
+      ],
+      "id": "9151db86-de39-4ff0-8deb-a3551b60815e",
+      "name": "OpenAI - Guidance Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "qVlqPgrprRstvHqt",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"message\": $json.output || $json.spokenResponse,\n  \"assessmentComplete\": $('Parse Assessment Response').item.json.assessmentComplete,\n  \"questionNumber\": $('Parse Assessment Response').item.json.questionNumber,\n  \"nextAction\": $('Parse Assessment Response').item.json.nextAction,\n  \"sessionId\": $('Extract Intake Data').item.json.sessionId,\n  \"concernsIdentified\": $('Parse Assessment Response').item.json.concernsIdentified || [],\n  \"expertMatched\": $('Match Expert to Concerns')?.item?.json?.matchedExpert || null\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2672,
+        192
+      ],
+      "id": "9f629f06-e539-4f3d-9feb-5af813464ab4",
+      "name": "Respond to ElevenLabs"
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/acts/compass~google-maps-extractor/runs/last/dataset/items?token=apify_api_BGd1TbPs2Jemzduyr9E9HD8aC0bhHO0FpPM6",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        16
+      ],
+      "id": "0b47a360-4f99-42b6-be79-47f1890817e7",
+      "name": "Get Results",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/compass~google-maps-extractor/runs?token=apify_api_BGd1TbPs2Jemzduyr9E9HD8aC0bhHO0FpPM6",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n    \"language\": \"en\",\n    \"locationQuery\": \"Lisbon, Portugal\",\n    \"maxCrawledPlacesPerSearch\": 10,\n    \"searchStringsArray\": [\n        \"Psychiatrist\"\n    ],\n    \"skipClosedPlaces\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        416,
+        64
+      ],
+      "id": "da3ccdee-08f5-4795-b946-c8808f7a8571",
+      "name": "Google Maps Actor",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "amount": 13
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        656,
+        32
+      ],
+      "id": "4748a517-e806-49b0-b51e-fbbe506d8211",
+      "name": "Wait",
+      "webhookId": "426f22d5-31db-4344-ae7a-13dedfc46bf4"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appmnJofkYqI6sH4V",
+          "mode": "list",
+          "cachedResultName": "Expert Matching & Assessment",
+          "cachedResultUrl": "https://airtable.com/appmnJofkYqI6sH4V"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl3PzFP0n2NhtPsy",
+          "mode": "list",
+          "cachedResultName": "Experts",
+          "cachedResultUrl": "https://airtable.com/appmnJofkYqI6sH4V/tbl3PzFP0n2NhtPsy"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Photo",
+              "displayName": "Photo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Specialties",
+              "displayName": "Specialties",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Bio",
+              "displayName": "Bio",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Availability",
+              "displayName": "Availability",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Available",
+                  "value": "Available"
+                },
+                {
+                  "name": "Waitlist",
+                  "value": "Waitlist"
+                },
+                {
+                  "name": "Full",
+                  "value": "Full"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Languages",
+              "displayName": "Languages",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "options": [
+                {
+                  "name": "English",
+                  "value": "English"
+                },
+                {
+                  "name": "Portuguese",
+                  "value": "Portuguese"
+                },
+                {
+                  "name": "Spanish",
+                  "value": "Spanish"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Session Type",
+              "displayName": "Session Type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "options": [
+                {
+                  "name": "In-person",
+                  "value": "In-person"
+                },
+                {
+                  "name": "Online",
+                  "value": "Online"
+                },
+                {
+                  "name": "Both",
+                  "value": "Both"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "City",
+              "displayName": "City",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Lisbon",
+                  "value": "Lisbon"
+                },
+                {
+                  "name": "Sintra",
+                  "value": "Sintra"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Assessments Count",
+              "displayName": "Assessments Count",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Assessments",
+              "displayName": "Assessments",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Recent Assessment Emotional Tones",
+              "displayName": "Recent Assessment Emotional Tones",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Current Workload Score",
+              "displayName": "Current Workload Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Top Specialty Category",
+              "displayName": "Top Specialty Category",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Bio Summary (AI)",
+              "displayName": "Bio Summary (AI)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1040,
+        16
+      ],
+      "id": "841ab774-71d2-407f-848b-c07b70afcf68",
+      "name": "Create a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "uMDuzZSAHkILfv9l",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wellness-assessment",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1008,
+        112
+      ],
+      "id": "21222db9-7c2f-44e2-bad0-83b37d2451c7",
+      "name": "Webhook - Assessment Intake",
+      "webhookId": "7cc5a74f-360d-4697-a547-2343777a5fe9"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appmnJofkYqI6sH4V",
+          "mode": "list",
+          "cachedResultName": "Expert Matching & Assessment",
+          "cachedResultUrl": "https://airtable.com/appmnJofkYqI6sH4V"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblwJPoiYLZtMuGZY",
+          "mode": "list",
+          "cachedResultName": "Assessments",
+          "cachedResultUrl": "https://airtable.com/appmnJofkYqI6sH4V/tblwJPoiYLZtMuGZY"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Session Id": "=",
+            "Timestamp": "={{ $now.toISO() }}",
+            "Concerns Identified": "={{ $json.matchedExpert.specialties }}",
+            "Expert Matched": "={{ $('Match Expert to Concerns').item.json.matchedExpert?.name || 'No expert available' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Session Id",
+              "displayName": "Session Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Concerns Identified",
+              "displayName": "Concerns Identified",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Emotional Tone",
+              "displayName": "Emotional Tone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "neutral",
+                  "value": "neutral"
+                },
+                {
+                  "name": "concerned",
+                  "value": "concerned"
+                },
+                {
+                  "name": "distressed",
+                  "value": "distressed"
+                },
+                {
+                  "name": "positive",
+                  "value": "positive"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "City",
+              "displayName": "City",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Expert Matched",
+              "displayName": "Expert Matched",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Wants Expert",
+              "displayName": "Wants Expert",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "yes",
+                  "value": "yes"
+                },
+                {
+                  "name": "no",
+                  "value": "no"
+                },
+                {
+                  "name": "unknown",
+                  "value": "unknown"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Assessment Complete",
+              "displayName": "Assessment Complete",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Expert Availability",
+              "displayName": "Expert Availability",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Expert Specialties",
+              "displayName": "Expert Specialties",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Expert Languages",
+              "displayName": "Expert Languages",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Expert Session Type",
+              "displayName": "Expert Session Type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Days Since Assessment",
+              "displayName": "Days Since Assessment",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Assessment Summary (AI)",
+              "displayName": "Assessment Summary (AI)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Suggested Next Steps (AI)",
+              "displayName": "Suggested Next Steps (AI)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        1648,
+        16
+      ],
+      "id": "92a76636-13df-4517-9df9-aaab0d11b537",
+      "name": "Save Assessment Record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "uMDuzZSAHkILfv9l",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Do you want to connect with a \nexpert?",
+        "height": 80,
+        "width": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -272,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "334365c2-66d5-4574-ab18-2b88881d1eef",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# Yes\n",
+        "height": 80,
+        "width": 192,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        16,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "b5259946-c5ff-4e17-ad20-eae5c4b696e9",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# No\n",
+        "height": 80,
+        "width": 192,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        16,
+        352
+      ],
+      "typeVersion": 1,
+      "id": "8c211223-e4a4-4b14-a9e5-78b68c150162",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "### Scapes the web\n",
+        "height": 80,
+        "width": 320,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        528,
+        -96
+      ],
+      "typeVersion": 1,
+      "id": "6c0924b2-57e4-45a1-bba4-e1f5899bad00",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "### Searches for matches\n\n",
+        "height": 80,
+        "width": 320,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1120,
+        -112
+      ],
+      "typeVersion": 1,
+      "id": "53c4383d-f1e1-4d44-9115-091fa40a206f",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "### Personalized suggestions\n",
+        "height": 80,
+        "width": 320,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        368
+      ],
+      "typeVersion": 1,
+      "id": "4cbaab77-11ea-423a-be74-d4e8acfa944a",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {
+    "Extract Intake Data": [
+      {
+        "json": {
+          "userResponse": "Yes, thank you.",
+          "questionStage": "complete",
+          "userCity": "Lisbon",
+          "sessionId": "test-session-12345",
+          "assessmentData": "[\"depressed_mood\", \"sleep_difficulties\", \"high_anxiety_stress\", \"low_energy_motivation\"]",
+          "wantsExpert": "yes"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Extract Intake Data": {
+      "main": [
+        [
+          {
+            "node": "Check Assessment Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Assessment Stage": {
+      "main": [
+        [
+          {
+            "node": "Check If Expert Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Expert Needed": {
+      "main": [
+        [
+          {
+            "node": "Google Maps Actor",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Experts by City",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Supportive Guidance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Experts by City": {
+      "main": [
+        [
+          {
+            "node": "Match Expert to Concerns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match Expert to Concerns": {
+      "main": [
+        [
+          {
+            "node": "Save Assessment Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Expert Introduction": {
+      "main": [
+        [
+          {
+            "node": "Respond to ElevenLabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Expert Intro Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Expert Introduction",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Supportive Guidance": {
+      "main": [
+        [
+          {
+            "node": "Respond to ElevenLabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Guidance Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Supportive Guidance",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Maps Actor": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Results": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a record": {
+      "main": [
+        [
+          {
+            "node": "Get Experts by City",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Assessment Intake": {
+      "main": [
+        [
+          {
+            "node": "Extract Intake Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Assessment Record": {
+      "main": [
+        [
+          {
+            "node": "Generate Expert Introduction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0a5d9edd-415a-4629-ac20-068d82afd00b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fed3bcd5c4f1500ac89e2448d965b25d1d7a6a8a83743ea98fabdaf7e7371a27"
+  },
+  "id": "UsjSbVEJPnty41Y6",
+  "tags": []
+}
