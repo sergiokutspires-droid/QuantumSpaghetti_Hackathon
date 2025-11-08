@@ -1,0 +1,1172 @@
+{
+  "name": "Video Motivational",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a978781f-9dfc-4220-8b30-aafa1d6b9f6f",
+              "leftValue": "={{ $json.done }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        160,
+        208
+      ],
+      "id": "8af434ff-0399-467e-ae5a-5586277c3a41",
+      "name": "If1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2496,
+        1200
+      ],
+      "id": "9795840f-4feb-4d9c-a81a-84478967035b",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -112,
+        208
+      ],
+      "id": "61215e91-d937-4606-902d-c129cbb0d088",
+      "name": "Wait",
+      "webhookId": "779a6bc1-e69d-4f3d-a795-0885ebe624d8"
+    },
+    {
+      "parameters": {
+        "url": "=https://generativelanguage.googleapis.com/v1beta/{{ $json.name }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyDRUXR230pmYIRLQKlggt-Ck1OOwM26jGc"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        32,
+        208
+      ],
+      "id": "d368de5e-e2e5-4cd8-ad20-f23e3350c461",
+      "name": "Status"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.response.generateVideoResponse.generatedSamples[0].video.uri }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyDRUXR230pmYIRLQKlggt-Ck1OOwM26jGc"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        368,
+        192
+      ],
+      "id": "747ca012-2684-4973-83ad-0c3225655815",
+      "name": "Download"
+    },
+    {
+      "parameters": {
+        "content": "## Veo 3 Fast",
+        "height": 1056,
+        "width": 5200,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1568,
+        -304
+      ],
+      "typeVersion": 1,
+      "id": "010446b8-9800-4c3a-9202-4afb0afa34ae",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# Create clips\n",
+        "height": 112,
+        "width": 928
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -256,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "6ff2ae69-fe5f-424f-b917-5a355667ec9b",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert cinematic prompt architect specialized in Veo-3 / VO3 text-to-video storytelling.\n\nTASK:\nGiven one OVERALL GOAL and four PERFORMANCE GOALS that describe how the person achieved this victory, create **four distinct VO3 scene prompts**, each one a cinematic celebration of success focusing on that specific step.\n\nINSTRUCTIONS:\n1. Each scene must stand alone as a complete VO3 prompt.\n2. Each should open with a triumphant, emotionally charged atmosphere showing the person celebrating success, directly connected to that performance goal.\n3. Keep tone cinematic, empowering, joyful — this is the *victory sequence*.\n4. Include for each scene:\n   - **Title** (short, inspiring)\n   - **Scene Description** (environment, action, emotion, symbols of triumph)\n   - **Cinematography** (camera moves, lenses, composition)\n   - **Lighting & Color** (mood of success)\n   - **Audio & Music** (soundtrack vibe and SFX)\n   - **VO Line** (one motivating sentence summarizing the step and the feeling of victory)\n   - **Render Specs** (duration ~5-8 s, aspect ratio 16:9, 24 fps, continuity: keep same protagonist)\n\n5. Use the OVERALL GOAL as thematic unity — all four scenes must feel like chapters of one larger triumph.\n6. Output each as a **numbered block (Scene 1 → Scene 4)** separated clearly with “---”.\n\nAvoid generic phrasing or list formatting. Write rich cinematic text that Veo-3 can interpret directly.",
+              "role": "system"
+            },
+            {
+              "content": "=OVERALL GOAL: {{ $json.Goal }}\n\nPERFORMANCE GOALS:\n1. {{ $json['Goal WEEK1'] }}\n2. {{ $json['Goal WEEK2'] }}\n3. {{ $json['Goal WEEK3'] }}\n4. {{ $json['Goal WEEK4'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -1056,
+        192
+      ],
+      "id": "e5bdc417-bf73-4fef-93d4-945105ba9124",
+      "name": "Assemble VO3 Expert Prompt",
+      "credentials": {
+        "openAiApi": {
+          "id": "qVlqPgrprRstvHqt",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -512,
+        192
+      ],
+      "id": "678783a1-7ecc-49b9-b9eb-1902c400a9d6",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appaYblbQ3dObzWvT",
+          "mode": "list",
+          "cachedResultName": "Goal Tracker",
+          "cachedResultUrl": "https://airtable.com/appaYblbQ3dObzWvT"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbllTHFvsmwH65cSa",
+          "mode": "list",
+          "cachedResultName": "Achievements",
+          "cachedResultUrl": "https://airtable.com/appaYblbQ3dObzWvT/tbllTHFvsmwH65cSa"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "LEVEL 1 Achievements": "={{ $json.response.generateVideoResponse.generatedSamples[0].video.uri }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "LEVEL 1 Achievements",
+              "displayName": "LEVEL 1 Achievements",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Assignee",
+              "displayName": "Assignee",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Todo",
+                  "value": "Todo"
+                },
+                {
+                  "name": "In progress",
+                  "value": "In progress"
+                },
+                {
+                  "name": "Done",
+                  "value": "Done"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Attachments",
+              "displayName": "Attachments",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Attachment Summary",
+              "displayName": "Attachment Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        576,
+        192
+      ],
+      "id": "7199723f-6939-45df-90df-aa42b0d4bc0e",
+      "name": "Create a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "uMDuzZSAHkILfv9l",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appaYblbQ3dObzWvT",
+          "mode": "list",
+          "cachedResultName": "Goal Tracker",
+          "cachedResultUrl": "https://airtable.com/appaYblbQ3dObzWvT"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblIfOBzzbY2ugOr3",
+          "mode": "list",
+          "cachedResultName": "Goals",
+          "cachedResultUrl": "https://airtable.com/appaYblbQ3dObzWvT/tblIfOBzzbY2ugOr3"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -1248,
+        192
+      ],
+      "id": "a6997bc3-da56-4180-98eb-efb6c70ee8aa",
+      "name": "Search records1",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "uMDuzZSAHkILfv9l",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node (JavaScript)\n// Input: one item whose JSON has the markdown in message.content (like your example)\n// Output: one branch per scene, each with a single item containing the scene data\n\n// Helpers\nfunction splitScenes(markdown) {\n  // Split on lines that are only --- (allowing spaces)\n  const parts = markdown\n    .split(/^\\s*---\\s*$/m)\n    .map(s => s.trim())\n    .filter(s => s.length > 0);\n  return parts;\n}\n\nfunction parseScene(part) {\n  // Extract **Scene N: Title**\n  const m = part.match(/\\*\\*Scene\\s+(\\d+):\\s*(.*?)\\*\\*/i);\n  const sceneNumber = m ? Number(m[1]) : null;\n  const title = m ? m[2].trim() : null;\n\n  // Remove the title line from the body\n  let body = part;\n  if (m) {\n    body = part.replace(m[0], \"\").trim();\n  }\n\n  return { sceneNumber, title, markdown: part.trim(), body };\n}\n\nconst root = items?.[0]?.json ?? {};\nconst content =\n  root.message?.content ??\n  root.content ??\n  root.text ??\n  \"\";\n\n// Guard\nif (!content || typeof content !== \"string\") {\n  // No usable content → pass input through on a single output\n  return [items];\n}\n\n// Parse\nconst sceneParts = splitScenes(content);\n\n// Build a flat array of items, one per scene\nconst itemsOut = sceneParts.map((part, idx) => {\n  const scene = parseScene(part);\n  if (scene.sceneNumber == null) scene.sceneNumber = idx + 1;\n  if (!scene.title) scene.title = `Scene ${scene.sceneNumber}`;\n  return {\n    json: {\n      index: idx,\n      sceneNumber: scene.sceneNumber,\n      title: scene.title,\n      markdown: scene.markdown,\n      body: scene.body,\n    },\n  };\n});\n\nreturn itemsOut;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -704,
+        192
+      ],
+      "id": "6aeebe8b-6810-444a-84bd-ee7b8c94dacc",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.status_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "key dc4a2b93-5e7a-4883-adfd-e5f5b4fb4391:0024ca226184ec102880d48a0688cd29"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1648,
+        192
+      ],
+      "id": "4cb62411-f555-4cfa-92ce-aa12b10e0b22",
+      "name": "Get Results"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5b377c41-0ebb-4dc3-80d2-39d109ee4fb0",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "COMPLETED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1872,
+        192
+      ],
+      "id": "84ffae08-28c8-4d9c-a1c8-0837a7545f63",
+      "name": "Completed?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/ffmpeg-api/compose",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "key dc4a2b93-5e7a-4883-adfd-e5f5b4fb4391:0024ca226184ec102880d48a0688cd29"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.json_string }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1872,
+        48
+      ],
+      "id": "df30febb-d7ec-4e09-a5bf-e5dfa4f0ce14",
+      "name": "Combine Videos"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine input items into a timeline of video tracks\nconst inputItems = $input.all();\nlet currentTimestamp = 0;\n// Build keyframes from each item, skip items missing media info\nconst keyframes = inputItems\n  .filter(item => \n    item.json.media &&\n    typeof item.json.media.url === 'string' &&\n    typeof item.json.media.duration === 'number'\n  )\n  .map(item => {\n    const url = item.json.media.url;\n    const duration = item.json.media.duration;\n\n    const keyframe = {\n      url,\n      timestamp: currentTimestamp,\n      duration\n    };\n\n    currentTimestamp += duration;\n    return keyframe;\n  });\n\n// Build the full JSON structure\nconst videoJson = {\n  tracks: [\n    {\n      id: \"1\",\n      type: \"video\",\n      keyframes\n    }\n  ]\n};\n\n// Return the JSON as a raw string\nreturn [\n  {\n    json: {\n      json_string: JSON.stringify(videoJson)\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1648,
+        48
+      ],
+      "id": "c80f491e-689a-4774-9354-d5c5f746340e",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.status_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "key dd139e15-bd6d-47df-86b3-9105649558f9:6b449a01c91074dbaff37ce5f39cc109"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2384,
+        32
+      ],
+      "id": "57674159-5bfb-4d96-a6ae-2f2983916d8a",
+      "name": "Get Results1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5b377c41-0ebb-4dc3-80d2-39d109ee4fb0",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "COMPLETED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2608,
+        32
+      ],
+      "id": "abb94751-ff2d-453a-89c2-2a4e1da94f45",
+      "name": "Completed?1"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.response_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "key dd139e15-bd6d-47df-86b3-9105649558f9:6b449a01c91074dbaff37ce5f39cc109"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2176,
+        -160
+      ],
+      "id": "5990141a-b3e9-4c08-9b01-62c97f592cd0",
+      "name": "Get Video Data1"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appaYblbQ3dObzWvT",
+          "mode": "list",
+          "cachedResultName": "Goal Tracker",
+          "cachedResultUrl": "https://airtable.com/appaYblbQ3dObzWvT"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbllTHFvsmwH65cSa",
+          "mode": "list",
+          "cachedResultName": "Achievements",
+          "cachedResultUrl": "https://airtable.com/appaYblbQ3dObzWvT/tbllTHFvsmwH65cSa"
+        },
+        "options": {},
+        "sort": {
+          "property": [
+            {
+              "field": "LEVEL 1 Achievements"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        976,
+        192
+      ],
+      "id": "36937743-726a-4da7-b19b-2f063d61c319",
+      "name": "Grab Video Files",
+      "retryOnFail": false,
+      "executeOnce": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "uMDuzZSAHkILfv9l",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/ffmpeg-api/metadata",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "key dc4a2b93-5e7a-4883-adfd-e5f5b4fb4391:0024ca226184ec102880d48a0688cd29"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "media_url",
+              "value": "={{ $json[\"LEVEL 1 Achievements\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1216,
+        192
+      ],
+      "id": "12c1d06e-458d-4be3-85a8-6cb1460d21e0",
+      "name": "Grab Video Meta Data"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.video_url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        -160
+      ],
+      "id": "53bb076f-352c-4870-81ef-f4ca692e25e4",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1424,
+        192
+      ],
+      "id": "1f213402-cae3-44ff-ab2d-a28c1ed9c589",
+      "name": "Wait4",
+      "webhookId": "3fa0e59c-efc4-42fe-9b64-aabcd384816a"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2176,
+        32
+      ],
+      "id": "53c2c518-9589-4639-8f30-e49f9ecc3171",
+      "name": "Wait3",
+      "webhookId": "3fa0e59c-efc4-42fe-9b64-aabcd384816a"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/veo-3.0-fast-generate-preview:predictLongRunning",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyDRUXR230pmYIRLQKlggt-Ck1OOwM26jGc"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n{\n\"instances\": [\n{ \"prompt\": $json.body }\n],\n\"parameters\": { \"aspectRatio\": \"16:9\" }\n}\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -288,
+        208
+      ],
+      "id": "7334062a-c06c-436c-857c-2a167d112f2f",
+      "name": "Veo 3 Normal"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appaYblbQ3dObzWvT",
+          "mode": "list",
+          "cachedResultName": "Goal Tracker",
+          "cachedResultUrl": "https://airtable.com/appaYblbQ3dObzWvT"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbllTHFvsmwH65cSa",
+          "mode": "list",
+          "cachedResultName": "Achievements",
+          "cachedResultUrl": "https://airtable.com/appaYblbQ3dObzWvT/tbllTHFvsmwH65cSa"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "LEVEL 1 Achievements",
+              "displayName": "LEVEL 1 Achievements",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Assignee",
+              "displayName": "Assignee",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Todo",
+                  "value": "Todo"
+                },
+                {
+                  "name": "In progress",
+                  "value": "In progress"
+                },
+                {
+                  "name": "Done",
+                  "value": "Done"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Attachments",
+              "displayName": "Attachments",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Attachment Summary",
+              "displayName": "Attachment Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2592,
+        -160
+      ],
+      "id": "2ff31811-f02f-4250-b507-f29ad46aa788",
+      "name": "Create a record1",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "uMDuzZSAHkILfv9l",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.cleanresponce }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Key dc4a2b93-5e7a-4883-adfd-e5f5b4fb4391:0024ca226184ec102880d48a0688cd29"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1472,
+        48
+      ],
+      "id": "802d201a-486c-49c3-aac2-57d6b15d1cc2",
+      "name": "Get Video Data3"
+    },
+    {
+      "parameters": {
+        "content": "# Detect growth\n\n",
+        "height": 112,
+        "width": 704
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1248,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "db084f0a-39a8-417b-9dc7-473698fea2e0",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "# Merge Cliips together\n\n",
+        "height": 112,
+        "width": 1296
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1392,
+        -368
+      ],
+      "typeVersion": 1,
+      "id": "1e8c1cb7-28aa-45ef-8d52-662277727842",
+      "name": "Sticky Note4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Download",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        []
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble VO3 Expert Prompt": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Grab Video Files",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Veo 3 Normal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a record": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records1": {
+      "main": [
+        [
+          {
+            "node": "Assemble VO3 Expert Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Results": {
+      "main": [
+        [
+          {
+            "node": "Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completed?": {
+      "main": [
+        [
+          {
+            "node": "Get Video Data3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Videos": {
+      "main": [
+        [
+          {
+            "node": "Wait3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Combine Videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Results1": {
+      "main": [
+        [
+          {
+            "node": "Completed?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completed?1": {
+      "main": [
+        [
+          {
+            "node": "Get Video Data1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video Data1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grab Video Files": {
+      "main": [
+        [
+          {
+            "node": "Grab Video Meta Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grab Video Meta Data": {
+      "main": [
+        [
+          {
+            "node": "Wait4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Create a record1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait4": {
+      "main": [
+        [
+          {
+            "node": "Get Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait3": {
+      "main": [
+        [
+          {
+            "node": "Get Results1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veo 3 Normal": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video Data3": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "69cae90d-a7c0-4b3d-be66-66e11642607f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fed3bcd5c4f1500ac89e2448d965b25d1d7a6a8a83743ea98fabdaf7e7371a27"
+  },
+  "id": "VHZsZgIkuR9Vs1fu",
+  "tags": []
+}

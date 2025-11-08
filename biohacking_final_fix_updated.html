@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIO_Hacking Enlightenment</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
+            background: linear-gradient(180deg, #0a0a1f 0%, #1a0a2e 50%, #0f0820 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 4s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.2); }
+        }
+
+        /* Navigation */
+        .nav-bar {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            padding: 12px 24px;
+            display: flex;
+            gap: 32px;
+            z-index: 100;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.5;
+        }
+
+        .nav-item:hover {
+            opacity: 1;
+        }
+
+        .nav-item.active {
+            opacity: 1;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        .nav-label {
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 40px 120px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 80px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .logo {
+            font-size: 42px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #00f5ff 0%, #b24bf3 50%, #ff6ec7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 3px;
+            margin-bottom: 8px;
+        }
+
+        .tagline {
+            font-size: 13px;
+            color: rgba(160, 160, 255, 0.7);
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            font-weight: 300;
+        }
+
+        /* Page Views */
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Home Page - Mode Selection */
+        .home-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .mode-option {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 40px 50px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            min-width: 280px;
+        }
+
+        .mode-option:hover {
+            transform: translateY(-8px);
+            border-color: rgba(0, 245, 255, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 245, 255, 0.15);
+        }
+
+        .mode-option.active {
+            border-color: #00f5ff;
+            background: rgba(0, 245, 255, 0.05);
+            box-shadow: 0 0 60px rgba(0, 245, 255, 0.3);
+        }
+
+        .mode-icon {
+            font-size: 56px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .mode-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #ffffff;
+        }
+
+        .mode-subtitle {
+            font-size: 13px;
+            color: rgba(160, 160, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        /* Crystal Container */
+        .crystal-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 80px 0;
+        }
+
+        .crystal-orb {
+            width: 280px;
+            height: 280px;
+            position: relative;
+            cursor: pointer;
+            animation: breathe 8s ease-in-out infinite;
+            filter: drop-shadow(0 0 60px rgba(0, 245, 255, 0.4));
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .crystal-orb.active {
+            animation: breathe 8s ease-in-out infinite, pulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { filter: drop-shadow(0 0 60px rgba(0, 245, 255, 0.4)); }
+            50% { filter: drop-shadow(0 0 100px rgba(178, 75, 243, 0.8)); }
+        }
+
+        .crystal-orb.wellness .crystal-inner {
+            background: linear-gradient(135deg, #4ecdc4 0%, #b24bf3 50%, #ff6ba9 100%);
+        }
+
+        .crystal-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00f5ff 0%, #b24bf3 50%, #ff6ec7 100%);
+            position: relative;
+            box-shadow: 
+                0 0 80px rgba(0, 245, 255, 0.5),
+                0 0 140px rgba(178, 75, 243, 0.3),
+                inset 0 0 80px rgba(255, 255, 255, 0.15);
+            transition: all 0.4s ease;
+        }
+
+        .crystal-orb:hover .crystal-inner {
+            box-shadow: 
+                0 0 100px rgba(0, 245, 255, 0.7),
+                0 0 180px rgba(178, 75, 243, 0.5),
+                inset 0 0 100px rgba(255, 255, 255, 0.25);
+        }
+
+        .crystal-glow {
+            position: absolute;
+            top: 15%;
+            left: 15%;
+            width: 70%;
+            height: 70%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(20px);
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            animation: sparkle 3s infinite;
+            box-shadow: 0 0 10px white;
+        }
+
+        .sparkle:nth-child(2) { top: 25%; left: 35%; animation-delay: 0s; }
+        .sparkle:nth-child(3) { top: 45%; right: 25%; animation-delay: 1s; }
+        .sparkle:nth-child(4) { bottom: 30%; left: 40%; animation-delay: 2s; }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Status Display */
+        .status-container {
+            margin-top: 50px;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .primary-metric {
+            font-size: 24px;
+            font-weight: 600;
+            color: #00f5ff;
+            margin-bottom: 12px;
+            min-height: 32px;
+        }
+
+        .agent-message {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+            font-weight: 300;
+            min-height: 24px;
+        }
+
+        /* Dashboard Cards */
+        .dashboard-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-top: 60px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(0, 245, 255, 0.3);
+            transform: translateY(-4px);
+        }
+
+        .stat-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00f5ff 0%, #b24bf3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Messages */
+        .message {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px 32px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+            animation: slideDown 0.4s ease;
+        }
+
+        @keyframes slideDown {
+            from { transform: translate(-50%, -20px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        .message.error {
+            border-color: rgba(255, 100, 100, 0.5);
+            background: rgba(255, 100, 100, 0.15);
+        }
+
+        .message.success {
+            border-color: rgba(100, 255, 180, 0.5);
+            background: rgba(100, 255, 180, 0.15);
+        }
+
+        .spinner {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 245, 255, 0.2);
+            border-top-color: #00f5ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 30px auto;
+        }
+
+        .spinner.active {
+            display: block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== ROADMAP / PROGRESSION MAP STYLES ===== */
+        
+        /* Page Headers */
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 300;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #4ecdc4, #667eea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Main Goal Card */
+        .main-goal-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 24px;
+            padding: 35px 30px;
+            margin-bottom: 35px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
+        }
+
+        .main-goal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .main-goal-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(102, 126, 234, 0.8);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .main-goal-text {
+            font-size: 24px;
+            font-weight: 300;
+            line-height: 1.5;
+            background: linear-gradient(135deg, #ffffff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Performance Goals Strip */
+        .performance-steps {
+            position: relative;
+            margin: 40px 0;
+        }
+
+        .step-connector {
+            position: absolute;
+            left: 28px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, 
+                rgba(78, 205, 196, 0.5) 0%, 
+                rgba(102, 126, 234, 0.5) 50%, 
+                rgba(240, 147, 251, 0.5) 100%
+            );
+            z-index: 0;
+        }
+
+        .performance-step {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 22px 25px 22px 70px;
+            margin-bottom: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+            animation: slideInLeft 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        .performance-step:nth-child(2) { animation-delay: 0.1s; }
+        .performance-step:nth-child(3) { animation-delay: 0.2s; }
+        .performance-step:nth-child(4) { animation-delay: 0.3s; }
+        .performance-step:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .performance-step:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(8px);
+            border-color: rgba(78, 205, 196, 0.3);
+        }
+
+        .step-number {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4ecdc4, #667eea);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
+            z-index: 1;
+        }
+
+        .performance-step:nth-child(2) .step-number {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .performance-step:nth-child(3) .step-number {
+            background: linear-gradient(135deg, #764ba2, #f093fb);
+            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+        }
+
+        .performance-step:nth-child(4) .step-number {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+        }
+
+        .performance-step:nth-child(5) .step-number {
+            background: linear-gradient(135deg, #f5576c, #ff6b6b);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .step-content {
+            font-size: 15px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 30px;
+            opacity: 0;
+            animation: fadeIn 0.6s ease forwards;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .empty-state-message {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            line-height: 1.6;
+        }
+
+        /* Spinner */
+        .spinner {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(78, 205, 196, 0.2);
+            border-top-color: #4ecdc4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 40px auto;
+        }
+
+        .spinner.active {
+            display: block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 32px;
+            }
+
+            .mode-selector {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .crystal-orb {
+                width: 200px;
+                height: 200px;
+            }
+
+            .nav-bar {
+                bottom: 20px;
+                padding: 10px 16px;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="logo">BIO_HACKING ENLIGHTENMENT</h1>
+            <p class="tagline">Elevate Your Consciousness</p>
+        </div>
+
+        <!-- HOME PAGE -->
+        <div id="homePage" class="page active">
+            <div class="home-view">
+                <div class="mode-selector">
+                    <div class="mode-option" data-mode="goal">
+                        <span class="mode-icon">🚀</span>
+                        <h2 class="mode-title">Goal Crystal</h2>
+                        <p class="mode-subtitle">Strategic guidance & performance acceleration</p>
+                    </div>
+
+                    <div class="mode-option" data-mode="wellness">
+                        <span class="mode-icon">🧠</span>
+                        <h2 class="mode-title">Wellness Coach</h2>
+                        <p class="mode-subtitle">Emotional balance & mental health support</p>
+                    </div>
+                </div>
+
+                <div class="crystal-section">
+                    <div class="crystal-orb" id="crystalOrb">
+                        <div class="crystal-inner">
+                            <div class="crystal-glow"></div>
+                            <div class="sparkle"></div>
+                            <div class="sparkle"></div>
+                            <div class="sparkle"></div>
+                        </div>
+                    </div>
+
+                    <div class="status-container">
+                        <div class="primary-metric" id="primaryMetric">Select your AI companion above</div>
+                        <div class="agent-message" id="agentMessage">Click the crystal to begin your session</div>
+                        <div class="spinner" id="spinner"></div>
+                    </div>
+                </div>
+
+                <div class="dashboard-row">
+                    <div class="stat-card">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-label">Focus Power</div>
+                        <div class="stat-value">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🔥</div>
+                        <div class="stat-label">Flow Streak</div>
+                        <div class="stat-value">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🌿</div>
+                        <div class="stat-label">Balance</div>
+                        <div class="stat-value">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🧭</div>
+                        <div class="stat-label">Progress</div>
+                        <div class="stat-value">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SESSIONS PAGE (Placeholder) -->
+        <div id="sessionsPage" class="page">
+            <h2 style="text-align: center; margin-top: 100px; font-size: 32px;">📊 Sessions</h2>
+            <p style="text-align: center; color: rgba(255,255,255,0.5); margin-top: 20px;">Your conversation history will appear here</p>
+        </div>
+
+        <!-- ROADMAP PAGE (Placeholder) -->
+        <!-- PROGRESSION MAP PAGE -->
+        <div id="roadmapPage" class="page">
+            <div class="page-header">
+                <h1 class="page-title">Your Roadmap</h1>
+                <p class="page-subtitle">Your journey to enlightenment</p>
+            </div>
+
+            <!-- Loading State -->
+            <div class="spinner" id="progressionSpinner"></div>
+
+            <!-- Content Container -->
+            <div id="progressionContent" style="display: none;">
+                <!-- Main Goal Card -->
+                <div class="main-goal-card">
+                    <div class="main-goal-label">🎯 Main Goal</div>
+                    <div class="main-goal-text" id="mainGoalText">Loading...</div>
+                </div>
+
+                <!-- Performance Steps -->
+                <div class="performance-steps">
+                    <div class="step-connector"></div>
+                    <div id="performanceStepsContainer">
+                        <!-- Steps will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">🗺️</div>
+                <div class="empty-state-title">No Roadmap Found</div>
+                <div class="empty-state-message" id="emptyStateMessage">
+                    We couldn't find a roadmap for your account.
+                </div>
+            </div>
+        </div>
+
+        <!-- PROFILE PAGE (Placeholder) -->
+        <div id="profilePage" class="page">
+            <h2 style="text-align: center; margin-top: 100px; font-size: 32px;">👤 Profile</h2>
+            <p style="text-align: center; color: rgba(255,255,255,0.5); margin-top: 20px;">Customize your experience</p>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <div class="nav-bar">
+        <div class="nav-item active" data-page="home">
+            <div class="nav-icon">🏠</div>
+            <div class="nav-label">Home</div>
+        </div>
+        <div class="nav-item" data-page="sessions">
+            <div class="nav-icon">📊</div>
+            <div class="nav-label">Sessions</div>
+        </div>
+        <div class="nav-item" data-page="roadmap">
+            <div class="nav-icon">🗺️</div>
+            <div class="nav-label">Roadmap</div>
+        </div>
+        <div class="nav-item" data-page="profile">
+            <div class="nav-icon">👤</div>
+            <div class="nav-label">Profile</div>
+        </div>
+    </div>
+
+    <div id="messageContainer"></div>
+
+    <script type="module">
+        import { Conversation } from 'https://cdn.jsdelivr.net/npm/@11labs/client/+esm';
+
+        // ===== CONFIGURATION - WELLNESS AGENT ID FIXED =====
+        const CONFIG = {
+            agents: {
+                goal: {
+                    agentId: 'agent_2301k9ffgscte5zrsh4tntnwnr72',
+                    webhook: 'https://vamosgigiox.app.n8n.cloud/webhook-test/elevenlabs-goals'
+                },
+                wellness: {
+                    agentId: 'agent_3601k9fsz3a2e93vt7pm6v0skmmb',
+                    webhook: 'https://vamosgigiox.app.n8n.cloud/webhook/wellness-assessment'
+                }
+            }
+        };
+
+        // ===== AIRTABLE CONFIGURATION FOR ROADMAP =====
+        const AIRTABLE_CONFIG = {
+            baseId: 'YOUR_BASE_ID',
+            tableIdOrName: 'YOUR_TABLE_NAME',
+            apiKey: 'YOUR_API_KEY',
+            userName: 'John',
+            proxyUrl: '',
+            demoMode: true
+        };
+
+        // Demo data for roadmap
+        const DEMO_DATA = {
+            Name: 'John',
+            Goal: 'Lose twenty kilograms',
+            'Goal WEEK1': 'Commit to a daily step target of 10,000 steps and track your progress',
+            'Goal WEEK2': 'Establish a consistent meal prep routine for healthier eating habits',
+            'Goal WEEK3': 'Add 3 strength training sessions per week to build muscle',
+            'Goal WEEK4': 'Create a sleep schedule aiming for 7-8 hours per night'
+        };
+
+        // ===== STATE =====
+        let currentMode = null;
+        let conversation = null;
+        let isConversationActive = false;
+
+        // ===== DOM ELEMENTS =====
+        const crystalOrb = document.getElementById('crystalOrb');
+        const primaryMetric = document.getElementById('primaryMetric');
+        const agentMessage = document.getElementById('agentMessage');
+        const spinner = document.getElementById('spinner');
+        const messageContainer = document.getElementById('messageContainer');
+        const modeOptions = document.querySelectorAll('.mode-option');
+        const navItems = document.querySelectorAll('.nav-item');
+        const pages = document.querySelectorAll('.page');
+
+        // ===== INITIALIZE STARS =====
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            for (let i = 0; i < 150; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 4 + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // ===== NAVIGATION =====
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const pageName = item.dataset.page;
+                
+                navItems.forEach(n => n.classList.remove('active'));
+                item.classList.add('active');
+                
+                pages.forEach(p => p.classList.remove('active'));
+                document.getElementById(`${pageName}Page`).classList.add('active');
+                
+                // Load progression map data when navigating to roadmap
+                if (pageName === 'roadmap') {
+                    loadProgressionMap();
+                }
+            });
+        });
+
+        // ===== UTILITY FUNCTIONS =====
+        function showMessage(text, type = 'info') {
+            messageContainer.innerHTML = `<div class="message ${type}">${text}</div>`;
+            setTimeout(() => {
+                messageContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        function updateStatus(metric, message) {
+            primaryMetric.textContent = metric;
+            agentMessage.textContent = message;
+        }
+
+        function setLoading(loading) {
+            if (loading) {
+                spinner.classList.add('active');
+                crystalOrb.style.opacity = '0.5';
+                crystalOrb.style.pointerEvents = 'none';
+            } else {
+                spinner.classList.remove('active');
+                crystalOrb.style.opacity = '1';
+                crystalOrb.style.pointerEvents = 'auto';
+            }
+        }
+
+        // ===== MODE SELECTION =====
+        modeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const mode = option.dataset.mode;
+                
+                modeOptions.forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                
+                currentMode = mode;
+                
+                // Update crystal appearance
+                if (mode === 'wellness') {
+                    crystalOrb.classList.add('wellness');
+                } else {
+                    crystalOrb.classList.remove('wellness');
+                }
+                
+                const modeName = mode === 'goal' ? 'Goal Crystal' : 'Wellness Coach';
+                updateStatus(
+                    `${modeName} Active`,
+                    'Click the crystal to begin your voice session'
+                );
+                
+                console.log(`✅ Mode selected: ${mode}`);
+                console.log(`📝 Agent ID: ${CONFIG.agents[mode].agentId}`);
+            });
+        });
+
+        // ===== ELEVENLABS INTEGRATION =====
+        async function startConversation() {
+            if (!currentMode) {
+                showMessage('Please select a mode first (Goal Crystal or Wellness Coach)', 'error');
+                return;
+            }
+
+            if (isConversationActive) {
+                console.log('⚠️ Conversation already active');
+                return;
+            }
+
+            try {
+                setLoading(true);
+                updateStatus('Connecting...', 'Initializing voice AI...');
+
+                const agentConfig = CONFIG.agents[currentMode];
+                if (!agentConfig) {
+                    throw new Error('Invalid mode configuration');
+                }
+
+                console.log(`🚀 Starting ${currentMode} conversation`);
+                console.log(`📝 Agent ID: ${agentConfig.agentId}`);
+                console.log(`🔗 Webhook: ${agentConfig.webhook}`);
+
+                conversation = await Conversation.startSession({
+                    agentId: agentConfig.agentId,
+                    
+                    onConnect: () => {
+                        console.log('✅ Connected to ElevenLabs');
+                        isConversationActive = true;
+                        crystalOrb.classList.add('active');
+                        updateStatus(
+                            '🎙️ Listening',
+                            'Speak now... I\'m here to help!'
+                        );
+                        setLoading(false);
+                        showMessage('Voice connection established!', 'success');
+                    },
+                    
+                    onDisconnect: () => {
+                        console.log('🔌 Disconnected');
+                        handleConversationEnd();
+                    },
+                    
+                    onError: (error) => {
+                        console.error('❌ Error:', error);
+                        showMessage(`Connection error: ${error.message}`, 'error');
+                        handleConversationEnd();
+                    },
+                    
+                    onMessage: (message) => {
+                        console.log('📩 Message:', message);
+                        if (message.message) {
+                            const preview = message.message.substring(0, 60);
+                            agentMessage.textContent = preview + (message.message.length > 60 ? '...' : '');
+                        }
+                    },
+                    
+                    onModeChange: (mode) => {
+                        const modeText = mode.mode === 'listening' ? '🎙️ Listening' : '🗣️ Speaking';
+                        primaryMetric.textContent = modeText;
+                    }
+                });
+
+                await sendWebhookData(agentConfig.webhook, {
+                    event: 'conversation_started',
+                    mode: currentMode,
+                    agentId: agentConfig.agentId,
+                    timestamp: new Date().toISOString(),
+                    sessionId: Date.now().toString()
+                });
+
+            } catch (error) {
+                console.error('❌ Failed to start:', error);
+                showMessage(`Failed to connect: ${error.message}. Check microphone permissions!`, 'error');
+                handleConversationEnd();
+            }
+        }
+
+        async function endConversation() {
+            if (conversation) {
+                try {
+                    await conversation.endSession();
+                    console.log('✅ Session ended');
+                } catch (error) {
+                    console.error('⚠️ Error ending session:', error);
+                }
+            }
+            handleConversationEnd();
+        }
+
+        function handleConversationEnd() {
+            isConversationActive = false;
+            crystalOrb.classList.remove('active');
+            setLoading(false);
+            updateStatus(
+                'Session Ended',
+                'Click the crystal to start a new session'
+            );
+            conversation = null;
+        }
+
+        // ===== WEBHOOK =====
+        async function sendWebhookData(webhookUrl, data) {
+            try {
+                console.log('📤 Webhook:', webhookUrl);
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Webhook success:', result);
+                    return result;
+                }
+            } catch (error) {
+                console.error('❌ Webhook error:', error);
+            }
+        }
+
+        // ===== ROADMAP / PROGRESSION MAP FUNCTIONS =====
+        async function loadProgressionMap() {
+            const spinner = document.getElementById('progressionSpinner');
+            const content = document.getElementById('progressionContent');
+            const emptyState = document.getElementById('emptyState');
+            
+            // Show loading state
+            spinner.classList.add('active');
+            content.style.display = 'none';
+            emptyState.style.display = 'none';
+
+            try {
+                const data = await fetchAirtableData();
+                
+                if (data) {
+                    renderProgressionMap(data);
+                    content.style.display = 'block';
+                } else {
+                    showEmptyState();
+                }
+            } catch (error) {
+                console.error('Error loading progression map:', error);
+                showEmptyState('An error occurred while loading your roadmap.');
+            } finally {
+                spinner.classList.remove('active');
+            }
+        }
+
+        async function fetchAirtableData() {
+            const { baseId, tableIdOrName, apiKey, proxyUrl, userName, demoMode } = AIRTABLE_CONFIG;
+
+            // If demo mode is enabled, return demo data
+            if (demoMode) {
+                console.log('Demo mode: Using mock data');
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return DEMO_DATA;
+            }
+
+            // If using a proxy URL
+            if (proxyUrl) {
+                try {
+                    const response = await fetch(`${proxyUrl}?name=${encodeURIComponent(userName)}`);
+                    if (!response.ok) throw new Error('Proxy request failed');
+                    return await response.json();
+                } catch (error) {
+                    console.error('Proxy error:', error);
+                    console.log('Falling back to demo data');
+                    return DEMO_DATA;
+                }
+            }
+
+            // Direct Airtable API call (will fail due to CORS in browser)
+            if (!apiKey || !baseId || !tableIdOrName) {
+                console.warn('Airtable configuration is incomplete, using demo data');
+                return DEMO_DATA;
+            }
+
+            try {
+                const url = `https://api.airtable.com/v0/${baseId}/${tableIdOrName}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Airtable request failed');
+                
+                const result = await response.json();
+                
+                // Find record by Name field
+                const record = result.records.find(r => 
+                    r.fields.Name && r.fields.Name.toLowerCase() === userName.toLowerCase()
+                );
+
+                return record ? record.fields : DEMO_DATA;
+            } catch (error) {
+                console.error('Airtable fetch error:', error);
+                console.log('Falling back to demo data');
+                return DEMO_DATA;
+            }
+        }
+
+        function renderProgressionMap(data) {
+            // Render main goal
+            const mainGoalText = document.getElementById('mainGoalText');
+            mainGoalText.textContent = data.Goal || 'No goal defined';
+
+            // Render performance goals
+            const stepsContainer = document.getElementById('performanceStepsContainer');
+            stepsContainer.innerHTML = '';
+
+            const performanceGoals = [
+                data['Goal WEEK1'],
+                data['Goal WEEK2'],
+                data['Goal WEEK3'],
+                data['Goal WEEK4']
+            ];
+
+            performanceGoals.forEach((goal, index) => {
+                if (goal && goal.trim() !== '') {
+                    const stepDiv = document.createElement('div');
+                    stepDiv.className = 'performance-step';
+                    stepDiv.innerHTML = `
+                        <div class="step-number">W${index + 1}</div>
+                        <div class="step-content">${escapeHtml(goal)}</div>
+                    `;
+                    stepsContainer.appendChild(stepDiv);
+                }
+            });
+
+            // Show message if no performance goals exist
+            if (stepsContainer.children.length === 0) {
+                stepsContainer.innerHTML = `
+                    <div class="empty-state" style="padding: 40px 20px;">
+                        <div class="empty-state-message">
+                            No performance goals defined yet.
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function showEmptyState(message = null) {
+            const emptyState = document.getElementById('emptyState');
+            const emptyStateMessage = document.getElementById('emptyStateMessage');
+            
+            if (message) {
+                emptyStateMessage.textContent = message;
+            } else {
+                emptyStateMessage.innerHTML = `
+                    No roadmap found for <strong>${AIRTABLE_CONFIG.userName}</strong>.<br>
+                    Please check your configuration.
+                `;
+            }
+            
+            emptyState.style.display = 'block';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ===== EVENT LISTENERS =====
+        crystalOrb.addEventListener('click', () => {
+            if (isConversationActive) {
+                endConversation();
+            } else {
+                startConversation();
+            }
+        });
+
+        // ===== INIT =====
+        createStars();
+        console.log('🎨 BIO_Hacking Enlightenment initialized');
+        console.log('📦 ElevenLabs SDK loaded');
+        console.log('🔧 CONFIG:', CONFIG);
+    </script>
+</body>
+</html>
