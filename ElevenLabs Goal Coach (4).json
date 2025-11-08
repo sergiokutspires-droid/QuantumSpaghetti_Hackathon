@@ -1,0 +1,487 @@
+{
+  "name": "ElevenLabs Goal Coach",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "elevenlabs-goals",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        48,
+        192
+      ],
+      "id": "059b00b4-8f3e-40dc-941b-6192ca461318",
+      "name": "Webhook",
+      "webhookId": "elevenlabs-goals"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "user-goal",
+              "name": "userGoal",
+              "value": "={{ $json.body.userGoal || $json.body.searchQuery || $json.body.goal }}",
+              "type": "string"
+            },
+            {
+              "id": "user-name",
+              "name": "userName",
+              "value": "={{ $json.body.userName || 'Friend' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        192
+      ],
+      "id": "cd3f2d11-7cc8-44a9-ba31-a17fb887742d",
+      "name": "Extract Data"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userGoal }}",
+        "options": {
+          "systemMessage": "You are an enthusiastic life coach and motivational expert. The user has shared a goal with you.\n\nYour task:\n1. Acknowledge their goal with genuine enthusiasm\n2. Break down the goal into 2-3 actionable first steps\n3. Provide a powerful motivational message to inspire them\n4. Keep your response concise (3-4 sentences max) since this will be spoken aloud\n\nBe energetic, positive, and specific. Use the person's name if provided."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        464,
+        192
+      ],
+      "id": "472991bf-4530-435e-83aa-db65a6e27b48",
+      "name": "AI Goal Coach"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.8
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        400
+      ],
+      "id": "1edcd169-ef0b-48e7-9652-0ef3bae96374",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "qVlqPgrprRstvHqt",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"message\": $('AI Goal Coach').item.json.output, \"success\": true } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1760,
+        192
+      ],
+      "id": "0c10c627-4cb0-4803-9031-1ccb49e6fd93",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert performance coach. Your task is to create a 4-week structured improvement plan that helps the user achieve their goal. Each week should include a clear and specific performance goal that builds progressively on the previous week. Use motivational and practical language.\nOutput the result in a clean JSON array with 4 objects, each containing:\n{\n  \"week\": \"Week X\",\n  \"goal\": \"...\"\n}\n\n",
+              "role": "system"
+            },
+            {
+              "content": "=User name: {{ $('Extract Data').item.json.userName }}\nUser goal: {{ $('Extract Data').item.json.userGoal }}\n\nGenerate 4 progressive weekly performance goals personalized for {{ $('Extract Data').item.json.userName }}."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        864,
+        192
+      ],
+      "id": "85f1cd19-7cc5-41fa-85c7-f804c17c20a9",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "qVlqPgrprRstvHqt",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Robust parser for model output -> returns 4 items (one per week)\n\n// 1) Read raw model content\nlet raw = String(items[0].json?.message?.content ?? \"\").trim();\n\n// 2) Strip code fences and any leading \"json\"\nraw = raw.replace(/^```(?:json)?\\s*/i, \"\").replace(/```$/i, \"\").trim();\nraw = raw.replace(/^json\\s*/i, \"\");\n\n// 3) If everything is wrapped in quotes, unescape\nif ((raw.startsWith('\"') && raw.endsWith('\"')) || (raw.startsWith(\"'\") && raw.endsWith(\"'\"))) {\n  raw = raw.slice(1, -1)\n           .replace(/\\\\\"/g, '\"')\n           .replace(/\\\\'/g, \"'\")\n           .replace(/\\\\n/g, \"\\n\")\n           .replace(/\\\\t/g, \"\\t\");\n}\n\n// 4) Normalise curly quotes and trailing commas\nraw = raw.replace(/[“”]/g, '\"').replace(/[‘’]/g, \"'\").replace(/,\\s*([}\\]])/g, \"$1\");\n\n// Helper: parse best-effort JSON array from arbitrary text\nfunction extractObjects(text) {\n  const objs = [];\n  let inStr = false, esc = false, depth = 0, start = -1;\n\n  for (let i = 0; i < text.length; i++) {\n    const c = text[i];\n\n    if (inStr) {\n      if (esc) { esc = false; }\n      else if (c === '\\\\') { esc = true; }\n      else if (c === '\"') { inStr = false; }\n      continue;\n    }\n\n    if (c === '\"') { inStr = true; continue; }\n    if (c === '{') {\n      if (depth === 0) start = i;\n      depth++;\n    } else if (c === '}') {\n      depth--;\n      if (depth === 0 && start !== -1) {\n        objs.push(text.slice(start, i + 1));\n        start = -1;\n      }\n    }\n  }\n  return objs;\n}\n\n// 5) Try direct JSON.parse first\nlet arr;\ntry {\n  // If model forgot the closing ']', try to fix it\n  let candidate = raw;\n  const hasOpenBracket = candidate.includes('[');\n  const hasCloseBracket = candidate.includes(']');\n  if (hasOpenBracket && !hasCloseBracket) candidate = candidate + ']';\n\n  const parsed = JSON.parse(candidate);\n  arr = Array.isArray(parsed) ? parsed : [parsed];\n} catch (_) {\n  // 6) Fallback: extract all top-level JSON objects and wrap into an array\n  const parts = extractObjects(raw);\n  if (!parts.length) {\n    throw new Error(\"No JSON array or objects found in model output.\\nRaw:\\n\" + raw);\n  }\n  arr = parts.map(p => {\n    try { return JSON.parse(p); }\n    catch (e) { throw new Error(\"Failed to parse object:\\n\" + p + \"\\n\" + e.message); }\n  });\n}\n\n// 7) Normalize and return one item per week\narr = arr.map((w, i) => ({\n  week: w.week || `Week ${i + 1}`,\n  goal: w.goal || \"\"\n}));\n\nreturn arr.map(w => ({ json: w }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        192
+      ],
+      "id": "cc32b41f-f5ec-4a3a-bd9a-cdd9979a12b3",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appaYblbQ3dObzWvT",
+          "mode": "list",
+          "cachedResultName": "Goal Tracker",
+          "cachedResultUrl": "https://airtable.com/appaYblbQ3dObzWvT"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblIfOBzzbY2ugOr3",
+          "mode": "list",
+          "cachedResultName": "Goals",
+          "cachedResultUrl": "https://airtable.com/appaYblbQ3dObzWvT/tblIfOBzzbY2ugOr3"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Extract Data').item.json.userName }}",
+            "Goal": "={{ $('Extract Data').item.json.userGoal }}",
+            "Goal WEEK1": "={{ $json.goal }}",
+            "Goal WEEK2": "={{ $json.goal }}",
+            "Goal WEEK3": "={{ $json.goal }}",
+            "Goal WEEK4": "={{ $json.goal }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Goal",
+              "displayName": "Goal",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Goal WEEK1",
+              "displayName": "Goal WEEK1",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Goal WEEK2",
+              "displayName": "Goal WEEK2",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Goal WEEK3",
+              "displayName": "Goal WEEK3",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Goal WEEK4",
+              "displayName": "Goal WEEK4",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "AI Response",
+              "displayName": "AI Response",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Active",
+                  "value": "Active"
+                },
+                {
+                  "name": "Completed",
+                  "value": "Completed"
+                },
+                {
+                  "name": "Paused",
+                  "value": "Paused"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Days Until Goal",
+              "displayName": "Days Until Goal",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Is Overdue?",
+              "displayName": "Is Overdue?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Goal Summary (AI)",
+              "displayName": "Goal Summary (AI)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Next Action Suggestion (AI)",
+              "displayName": "Next Action Suggestion (AI)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        192
+      ],
+      "id": "696bd94b-da6f-402d-86ff-7bc54ca72340",
+      "name": "Save to Airtable2",
+      "executeOnce": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "uMDuzZSAHkILfv9l",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Updates the goals",
+        "height": 80,
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1424,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "49219da3-f73a-43e2-8a18-19496946c236",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Identifies performance goals\n",
+        "height": 80,
+        "width": 432
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        368,
+        64
+      ],
+      "typeVersion": 1,
+      "id": "3ebd6750-d10d-4985-80fd-40dc7ef19e18",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Data": {
+      "main": [
+        [
+          {
+            "node": "AI Goal Coach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Goal Coach": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Goal Coach",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Save to Airtable2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Airtable2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f9d47da9-c1f7-4fb7-9a1e-f728aeb9e754",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fed3bcd5c4f1500ac89e2448d965b25d1d7a6a8a83743ea98fabdaf7e7371a27"
+  },
+  "id": "eVIuFya7sDSsb4FA",
+  "tags": []
+}
